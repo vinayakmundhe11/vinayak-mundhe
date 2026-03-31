@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>FitCalc — Diet Planner & Calorie Counter</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg: #f7f5f0;
+    --surface: #ffffff;
+    --border: #e8e4dc;
+    --text: #1a1a1a;
+    --text-muted: #8a8278;
+    --accent: #3d6b4f;
+    --accent-light: #eaf2ec;
+    --accent-warm: #c8732a;
+    --danger: #c0392b;
+    --shadow: 0 2px 12px rgba(0,0,0,0.06);
+    --radius: 12px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 15px;
+  }
+
+  /* HEADER */
+  header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 64px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .logo {
+    font-family: 'DM Serif Display', serif;
+    font-size: 22px;
+    color: var(--accent);
+    letter-spacing: -0.3px;
+  }
+  .logo span { color: var(--accent-warm); font-style: italic; }
+  nav { display: flex; gap: 4px; }
+  nav button {
+    background: none; border: none; cursor: pointer;
+    padding: 8px 16px; border-radius: 8px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px; font-weight: 500;
+    color: var(--text-muted); transition: all 0.15s;
+  }
+  nav button.active, nav button:hover {
+    background: var(--accent-light); color: var(--accent);
+  }
+
+  /* MAIN LAYOUT */
+  main {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 40px 24px;
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 28px;
+    align-items: start;
+  }
+
+  /* CARDS */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 28px;
+    box-shadow: var(--shadow);
+  }
+  .card-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 20px;
+    margin-bottom: 20px;
+    color: var(--text);
+  }
+  .card-title small {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--text-muted);
+    margin-left: 8px;
+  }
+
+  /* CALORIE RING */
+  .calorie-summary {
+    display: flex;
+    align-items: center;
+    gap: 28px;
+    margin-bottom: 28px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--border);
+  }
+  .ring-wrap { position: relative; width: 110px; height: 110px; flex-shrink: 0; }
+  .ring-wrap svg { transform: rotate(-90deg); }
+  .ring-bg { fill: none; stroke: var(--border); stroke-width: 8; }
+  .ring-fill { fill: none; stroke: var(--accent); stroke-width: 8;
+    stroke-linecap: round; transition: stroke-dashoffset 0.6s ease; }
+  .ring-center {
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+  }
+  .ring-kcal { font-size: 22px; font-weight: 600; line-height: 1; }
+  .ring-label { font-size: 11px; color: var(--text-muted); margin-top: 2px; letter-spacing: 0.5px; text-transform: uppercase; }
+  .macro-list { flex: 1; display: flex; flex-direction: column; gap: 10px; }
+  .macro-row { display: flex; align-items: center; gap: 10px; }
+  .macro-name { font-size: 13px; color: var(--text-muted); width: 68px; }
+  .macro-bar-wrap { flex: 1; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+  .macro-bar { height: 100%; border-radius: 3px; transition: width 0.5s ease; }
+  .macro-bar.protein { background: #4a90d9; }
+  .macro-bar.carbs   { background: var(--accent-warm); }
+  .macro-bar.fat     { background: #9b59b6; }
+  .macro-val { font-size: 13px; font-weight: 500; width: 44px; text-align: right; }
+
+  /* ADD FOOD FORM */
+  .add-food-form { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 24px; }
+  .add-food-form input, .add-food-form select {
+    flex: 1; min-width: 130px;
+    padding: 10px 14px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    background: var(--bg);
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .add-food-form input:focus, .add-food-form select:focus {
+    border-color: var(--accent);
+  }
+  .btn {
+    padding: 10px 20px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.15s;
+  }
+  .btn-primary { background: var(--accent); color: white; }
+  .btn-primary:hover { background: #2e5239; }
+  .btn-ghost { background: none; border: 1px solid var(--border); color: var(--text-muted); }
+  .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* MEAL SECTIONS */
+  .meal-section { margin-bottom: 20px; }
+  .meal-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 14px;
+    background: var(--bg);
+    border-radius: 8px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .meal-header-left { display: flex; align-items: center; gap: 10px; }
+  .meal-dot { width: 10px; height: 10px; border-radius: 50%; }
+  .meal-name { font-weight: 500; font-size: 14px; }
+  .meal-kcal { font-size: 13px; color: var(--text-muted); }
+  .meal-arrow { font-size: 12px; color: var(--text-muted); transition: transform 0.2s; }
+  .meal-arrow.open { transform: rotate(90deg); }
+  .meal-items { display: flex; flex-direction: column; gap: 4px; }
+  .food-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 8px 14px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface);
+    font-size: 14px;
+    animation: slideIn 0.2s ease;
+  }
+  @keyframes slideIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+  .food-item-left { display: flex; flex-direction: column; gap: 2px; }
+  .food-item-name { font-weight: 500; }
+  .food-item-meta { font-size: 12px; color: var(--text-muted); }
+  .food-item-right { display: flex; align-items: center; gap: 12px; }
+  .food-kcal { font-weight: 500; color: var(--accent); }
+  .del-btn {
+    background: none; border: none; cursor: pointer;
+    color: var(--text-muted); font-size: 16px; line-height: 1;
+    padding: 2px 6px; border-radius: 4px; transition: color 0.15s;
+  }
+  .del-btn:hover { color: var(--danger); }
+
+  /* SIDEBAR */
+  .sidebar { display: flex; flex-direction: column; gap: 20px; }
+
+  /* GOAL CARD */
+  .goal-fields { display: flex; flex-direction: column; gap: 12px; }
+  .field-row { display: flex; flex-direction: column; gap: 4px; }
+  .field-label { font-size: 12px; font-weight: 500; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+  .field-input {
+    padding: 9px 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    background: var(--bg);
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.15s;
+    width: 100%;
+  }
+  .field-input:focus { border-color: var(--accent); }
+  .goal-result {
+    margin-top: 16px;
+    padding: 14px;
+    background: var(--accent-light);
+    border-radius: 8px;
+    font-size: 14px;
+    color: var(--accent);
+    line-height: 1.5;
+    display: none;
+  }
+  .goal-result.visible { display: block; }
+  .goal-result strong { font-size: 22px; font-weight: 600; display: block; margin-bottom: 2px; }
+
+  /* QUICK ADD */
+  .quick-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .quick-item {
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.15s;
+    background: var(--bg);
+  }
+  .quick-item:hover { border-color: var(--accent); background: var(--accent-light); }
+  .quick-item-name { font-size: 13px; font-weight: 500; }
+  .quick-item-cal { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+  /* WATER TRACKER */
+  .water-glasses { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+  .glass {
+    width: 36px; height: 36px; border-radius: 8px;
+    border: 2px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; cursor: pointer; transition: all 0.15s;
+    background: var(--bg);
+  }
+  .glass.filled { background: #d0e8f5; border-color: #4a90d9; }
+  .water-label { font-size: 12px; color: var(--text-muted); margin-top: 8px; }
+
+  /* EMPTY STATE */
+  .empty-state {
+    text-align: center; padding: 32px 16px;
+    color: var(--text-muted); font-size: 14px;
+  }
+  .empty-state .icon { font-size: 32px; margin-bottom: 8px; }
+
+  /* TOAST */
+  .toast {
+    position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(20px);
+    background: var(--text); color: white; padding: 10px 20px;
+    border-radius: 8px; font-size: 14px; opacity: 0;
+    transition: all 0.3s; pointer-events: none; z-index: 999;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  @media (max-width: 768px) {
+    main { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Fit<span>Calc</span></div>
+  <nav>
+    <button class="active" onclick="showTab('tracker')">Tracker</button>
+    <button onclick="showTab('planner')">Meal Planner</button>
+  </nav>
+</header>
+
+<main>
+  <!-- LEFT: TRACKER -->
+  <div>
+    <div class="card">
+      <div class="card-title">Today's Log <small id="today-date"></small></div>
+
+      <!-- Calorie Ring + Macros -->
+      <div class="calorie-summary">
+        <div class="ring-wrap">
+          <svg width="110" height="110" viewBox="0 0 110 110">
+            <circle class="ring-bg" cx="55" cy="55" r="46"/>
+            <circle class="ring-fill" id="ring-fill" cx="55" cy="55" r="46"
+              stroke-dasharray="289" stroke-dashoffset="289"/>
+          </svg>
+          <div class="ring-center">
+            <div class="ring-kcal" id="ring-consumed">0</div>
+            <div class="ring-label">kcal</div>
+          </div>
+        </div>
+        <div class="macro-list">
+          <div class="macro-row">
+            <span class="macro-name">Protein</span>
+            <div class="macro-bar-wrap"><div class="macro-bar protein" id="bar-protein" style="width:0%"></div></div>
+            <span class="macro-val" id="val-protein">0g</span>
+          </div>
+          <div class="macro-row">
+            <span class="macro-name">Carbs</span>
+            <div class="macro-bar-wrap"><div class="macro-bar carbs" id="bar-carbs" style="width:0%"></div></div>
+            <span class="macro-val" id="val-carbs">0g</span>
+          </div>
+          <div class="macro-row">
+            <span class="macro-name">Fat</span>
+            <div class="macro-bar-wrap"><div class="macro-bar fat" id="bar-fat" style="width:0%"></div></div>
+            <span class="macro-val" id="val-fat">0g</span>
+          </div>
+          <div style="font-size:12px; color:var(--text-muted); margin-top:4px;">
+            Goal: <span id="goal-display">2000</span> kcal &nbsp;·&nbsp; Remaining: <span id="remaining" style="color:var(--accent); font-weight:500;">2000</span> kcal
+          </div>
+        </div>
+      </div>
+
+      <!-- Add Food -->
+      <div class="add-food-form">
+        <input type="text" id="food-name" placeholder="Food name" />
+        <input type="number" id="food-cal" placeholder="Calories" min="0"/>
+        <input type="number" id="food-protein" placeholder="Protein (g)" min="0"/>
+        <input type="number" id="food-carbs" placeholder="Carbs (g)" min="0"/>
+        <input type="number" id="food-fat" placeholder="Fat (g)" min="0"/>
+        <select id="food-meal">
+          <option value="breakfast">Breakfast</option>
+          <option value="lunch">Lunch</option>
+          <option value="dinner">Dinner</option>
+          <option value="snack">Snack</option>
+        </select>
+        <button class="btn btn-primary" onclick="addFood()">+ Add</button>
+      </div>
+
+      <!-- Meal Sections -->
+      <div id="meals-container"></div>
+    </div>
+  </div>
+
+  <!-- RIGHT: SIDEBAR -->
+  <div class="sidebar">
+    <!-- Calorie Goal Calculator -->
+    <div class="card">
+      <div class="card-title">Calorie Goal</div>
+      <div class="goal-fields">
+        <div class="field-row">
+          <label class="field-label">Age</label>
+          <input class="field-input" type="number" id="g-age" placeholder="25" min="10" max="100"/>
+        </div>
+        <div class="field-row">
+          <label class="field-label">Weight (kg)</label>
+          <input class="field-input" type="number" id="g-weight" placeholder="70" min="20" max="300"/>
+        </div>
+        <div class="field-row">
+          <label class="field-label">Height (cm)</label>
+          <input class="field-input" type="number" id="g-height" placeholder="170" min="100" max="250"/>
+        </div>
+        <div class="field-row">
+          <label class="field-label">Sex</label>
+          <select class="field-input" id="g-sex">
+            <option value="male">Male</option>
+            <option value="female">Female</option>
+          </select>
+        </div>
+        <div class="field-row">
+          <label class="field-label">Activity Level</label>
+          <select class="field-input" id="g-activity">
+            <option value="1.2">Sedentary (little/no exercise)</option>
+            <option value="1.375">Light (1–3 days/week)</option>
+            <option value="1.55" selected>Moderate (3–5 days/week)</option>
+            <option value="1.725">Active (6–7 days/week)</option>
+            <option value="1.9">Very Active (hard exercise)</option>
+          </select>
+        </div>
+        <div class="field-row">
+          <label class="field-label">Goal</label>
+          <select class="field-input" id="g-goal">
+            <option value="-500">Lose weight (−500 kcal)</option>
+            <option value="0" selected>Maintain weight</option>
+            <option value="500">Gain weight (+500 kcal)</option>
+          </select>
+        </div>
+        <button class="btn btn-primary" onclick="calcGoal()" style="width:100%">Calculate</button>
+      </div>
+      <div class="goal-result" id="goal-result">
+        <strong id="goal-kcal-result">—</strong>
+        kcal per day recommended
+        <div id="goal-breakdown" style="margin-top:8px; font-size:13px;"></div>
+      </div>
+    </div>
+
+    <!-- Quick Add -->
+    <div class="card">
+      <div class="card-title">Quick Add</div>
+      <div class="quick-grid" id="quick-grid"></div>
+    </div>
+
+    <!-- Water Tracker -->
+    <div class="card">
+      <div class="card-title">Water Intake</div>
+      <div class="water-glasses" id="water-glasses"></div>
+      <div class="water-label" id="water-label">0 / 8 glasses</div>
+    </div>
+  </div>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── STATE ────────────────────────────────────────────────────────────────────
+const state = {
+  goal: 2000,
+  meals: { breakfast: [], lunch: [], dinner: [], snack: [] },
+  water: 0
+};
+
+const MEAL_META = {
+  breakfast: { label: 'Breakfast', color: '#f0b429' },
+  lunch:     { label: 'Lunch',     color: '#38b2ac' },
+  dinner:    { label: 'Dinner',    color: '#667eea' },
+  snack:     { label: 'Snack',     color: '#ed8936' }
+};
+
+const QUICK_FOODS = [
+  { name: 'Banana',      cal: 89,  protein: 1,  carbs: 23, fat: 0 },
+  { name: 'Egg (1)',     cal: 78,  protein: 6,  carbs: 1,  fat: 5 },
+  { name: 'Brown Rice',  cal: 215, protein: 5,  carbs: 45, fat: 2 },
+  { name: 'Chicken 100g',cal: 165, protein: 31, carbs: 0,  fat: 4 },
+  { name: 'Apple',       cal: 95,  protein: 0,  carbs: 25, fat: 0 },
+  { name: 'Almonds 30g', cal: 170, protein: 6,  carbs: 6,  fat: 15 },
+];
+
+// ─── RENDER ───────────────────────────────────────────────────────────────────
+function render() {
+  renderSummary();
+  renderMeals();
+}
+
+function renderSummary() {
+  let totalCal = 0, totalP = 0, totalC = 0, totalF = 0;
+  for (const items of Object.values(state.meals)) {
+    for (const item of items) {
+      totalCal += item.cal; totalP += item.protein;
+      totalC += item.carbs; totalF += item.fat;
+    }
+  }
+  document.getElementById('ring-consumed').textContent = totalCal;
+  document.getElementById('remaining').textContent = Math.max(0, state.goal - totalCal);
+  document.getElementById('goal-display').textContent = state.goal;
+
+  const pct = Math.min(totalCal / state.goal, 1);
+  const circ = 289;
+  document.getElementById('ring-fill').style.strokeDashoffset = circ - pct * circ;
+  document.getElementById('ring-fill').style.stroke = totalCal > state.goal ? '#c0392b' : 'var(--accent)';
+
+  const maxMacro = Math.max(totalP + totalC + totalF, 1);
+  document.getElementById('bar-protein').style.width = (totalP / maxMacro * 100) + '%';
+  document.getElementById('bar-carbs').style.width   = (totalC / maxMacro * 100) + '%';
+  document.getElementById('bar-fat').style.width     = (totalF / maxMacro * 100) + '%';
+  document.getElementById('val-protein').textContent = totalP + 'g';
+  document.getElementById('val-carbs').textContent   = totalC + 'g';
+  document.getElementById('val-fat').textContent     = totalF + 'g';
+}
+
+function renderMeals() {
+  const container = document.getElementById('meals-container');
+  container.innerHTML = '';
+  for (const [key, meta] of Object.entries(MEAL_META)) {
+    const items = state.meals[key];
+    const mealCal = items.reduce((s, i) => s + i.cal, 0);
+    const section = document.createElement('div');
+    section.className = 'meal-section';
+    section.innerHTML = `
+      <div class="meal-header" onclick="toggleMeal('${key}')">
+        <div class="meal-header-left">
+          <div class="meal-dot" style="background:${meta.color}"></div>
+          <span class="meal-name">${meta.label}</span>
+          <span class="meal-kcal">${mealCal} kcal</span>
+        </div>
+        <span class="meal-arrow open" id="arrow-${key}">›</span>
+      </div>
+      <div class="meal-items" id="meal-${key}">
+        ${items.length === 0 ? `<div class="empty-state"><div>No foods logged yet</div></div>` :
+          items.map((item, idx) => `
+            <div class="food-item">
+              <div class="food-item-left">
+                <div class="food-item-name">${item.name}</div>
+                <div class="food-item-meta">P: ${item.protein}g &nbsp; C: ${item.carbs}g &nbsp; F: ${item.fat}g</div>
+              </div>
+              <div class="food-item-right">
+                <span class="food-kcal">${item.cal} kcal</span>
+                <button class="del-btn" onclick="removeFood('${key}', ${idx})">×</button>
+              </div>
+            </div>`).join('')}
+      </div>`;
+    container.appendChild(section);
+  }
+}
+
+function toggleMeal(key) {
+  const el = document.getElementById('meal-' + key);
+  const arrow = document.getElementById('arrow-' + key);
+  const hidden = el.style.display === 'none';
+  el.style.display = hidden ? 'flex' : 'none';
+  el.style.flexDirection = 'column';
+  el.style.gap = '4px';
+  arrow.classList.toggle('open', hidden);
+}
+
+// ─── ACTIONS ──────────────────────────────────────────────────────────────────
+function addFood(override) {
+  const item = override || {
+    name:    document.getElementById('food-name').value.trim(),
+    cal:     parseInt(document.getElementById('food-cal').value) || 0,
+    protein: parseInt(document.getElementById('food-protein').value) || 0,
+    carbs:   parseInt(document.getElementById('food-carbs').value) || 0,
+    fat:     parseInt(document.getElementById('food-fat').value) || 0,
+    meal:    document.getElementById('food-meal').value
+  };
+  if (!item.name) { toast('Please enter a food name'); return; }
+  if (!item.cal)  { toast('Please enter calories'); return; }
+  state.meals[item.meal].push(item);
+  if (!override) {
+    ['food-name','food-cal','food-protein','food-carbs','food-fat'].forEach(id => document.getElementById(id).value = '');
+  }
+  render();
+  toast(`${item.name} added!`);
+}
+
+function removeFood(meal, idx) {
+  state.meals[meal].splice(idx, 1);
+  render();
+}
+
+function calcGoal() {
+  const age    = parseFloat(document.getElementById('g-age').value);
+  const weight = parseFloat(document.getElementById('g-weight').value);
+  const height = parseFloat(document.getElementById('g-height').value);
+  const sex    = document.getElementById('g-sex').value;
+  const act    = parseFloat(document.getElementById('g-activity').value);
+  const goal   = parseInt(document.getElementById('g-goal').value);
+  if (!age || !weight || !height) { toast('Please fill all fields'); return; }
+
+  // Mifflin-St Jeor
+  let bmr = sex === 'male'
+    ? 10*weight + 6.25*height - 5*age + 5
+    : 10*weight + 6.25*height - 5*age - 161;
+  const tdee = Math.round(bmr * act);
+  const target = tdee + goal;
+  state.goal = target;
+
+  const protein = Math.round(weight * 1.6);
+  const fat     = Math.round(target * 0.25 / 9);
+  const carbs   = Math.round((target - protein*4 - fat*9) / 4);
+
+  document.getElementById('goal-kcal-result').textContent = target;
+  document.getElementById('goal-breakdown').innerHTML =
+    `TDEE: ${tdee} kcal<br>Protein: ~${protein}g &nbsp; Carbs: ~${carbs}g &nbsp; Fat: ~${fat}g`;
+  document.getElementById('goal-result').classList.add('visible');
+  render();
+  toast('Goal updated!');
+}
+
+// ─── QUICK ADD ────────────────────────────────────────────────────────────────
+function renderQuickGrid() {
+  const grid = document.getElementById('quick-grid');
+  grid.innerHTML = QUICK_FOODS.map((f, i) => `
+    <div class="quick-item" onclick="quickAdd(${i})">
+      <div class="quick-item-name">${f.name}</div>
+      <div class="quick-item-cal">${f.cal} kcal</div>
+    </div>`).join('');
+}
+function quickAdd(idx) {
+  const f = QUICK_FOODS[idx];
+  const meal = document.getElementById('food-meal').value;
+  addFood({ ...f, meal });
+}
+
+// ─── WATER ────────────────────────────────────────────────────────────────────
+function renderWater() {
+  const container = document.getElementById('water-glasses');
+  container.innerHTML = '';
+  for (let i = 0; i < 8; i++) {
+    const g = document.createElement('div');
+    g.className = 'glass' + (i < state.water ? ' filled' : '');
+    g.textContent = '💧';
+    g.onclick = () => { state.water = i < state.water ? i : i + 1; renderWater(); };
+    container.appendChild(g);
+  }
+  document.getElementById('water-label').textContent = `${state.water} / 8 glasses (${state.water * 250}ml)`;
+}
+
+// ─── UTILS ────────────────────────────────────────────────────────────────────
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2200);
+}
+
+function showTab(tab) {
+  document.querySelectorAll('nav button').forEach((b,i) => b.classList.toggle('active', (i===0&&tab==='tracker')||(i===1&&tab==='planner')));
+  toast(tab === 'planner' ? 'Meal Planner coming soon!' : 'Tracker loaded');
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+document.getElementById('today-date').textContent = new Date().toLocaleDateString('en-IN', { weekday:'long', month:'short', day:'numeric' });
+renderQuickGrid();
+renderWater();
+render();
+</script>
+</body>
+</html>
